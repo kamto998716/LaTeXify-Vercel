@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LaTeXify</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-mark">∫</div>
+        <div class="brand-text">
+          <p id="brand-eyebrow" class="eyebrow">LaTeXify</p>
+          <h1 class="subtitle">Teacher Workspace</h1>
+        </div>
+      </div>
+      <div class="language-toggle" role="group" aria-label="Language switcher">
+        <button type="button" class="lang-btn active" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="zh-Hant">繁中</button>
+      </div>
+    </header>
+
+
+    <main class="workspace">
+      <section class="panel preview-panel">
+        <div class="upload-section">
+          <div class="panel-heading section-heading">
+            <div>
+              <p class="eyebrow" data-i18n="documentsEyebrow">Upload queue</p>
+              <h2 data-i18n="documentsTitle">Documents</h2>
+            </div>
+            <div class="heading-actions">
+              <label class="ghost-btn file-trigger" for="fileInput" data-i18n="addFiles">Add files</label>
+              <button type="button" class="ghost-btn" id="typeTextBtn" data-i18n="typeText">Type text</button>
+            </div>
+          </div>
+
+          <div class="upload-box" id="dropzone" tabindex="0" role="button" aria-label="Upload documents">
+            <input id="fileInput" class="file-input" type="file" accept=".pdf,.txt,.md,.docx,application/pdf,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*" multiple />
+            <div class="upload-graphic" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="upload-copy">
+              <h3 data-i18n="dropzoneTitle">Drop PDFs, images, or screenshots here</h3>
+              <p data-i18n="dropzoneText">Batch upload is supported. Each file becomes its own LaTeX session and Word export.</p>
+            </div>
+            <div class="upload-actions">
+              <label class="primary-btn file-trigger" for="fileInput" data-i18n="pickFiles">Choose files</label>
+              <button type="button" class="ghost-btn" id="clearAllBtn" data-i18n="clearAll">Clear all</button>
+              <button type="button" class="ghost-btn" id="runAllBtn" data-i18n="runAll">Run all attached</button>
+            </div>
+          </div>
+
+          <div class="queue-wrap">
+            <div class="queue-strip" id="sessionList"></div>
+          </div>
+
+          <div class="status-strip" aria-live="polite">
+            <strong id="statusMessage">Ready.</strong>
+            <span id="statusSecondary">—</span>
+          </div>
+        </div>
+
+        <div class="preview-section">
+          <div class="panel-heading preview-heading">
+            <div>
+              <p class="eyebrow" data-i18n="previewEyebrow">Preview panel</p>
+              <h2 data-i18n="previewTitle">Document preview</h2>
+            </div>
+            <div class="preview-heading-actions">
+              <div class="selection-chip" id="selectedDocumentChip">—</div>
+              <button type="button" class="primary-btn run-current-btn" id="runCurrentBtn">
+                <span class="btn-dot"></span>
+                <span data-i18n="runCurrent">Run Current</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="preview-stage" id="previewStage">
+            <div class="empty-state preview-empty">
+              <div class="empty-icon">📄</div>
+              <h3 data-i18n="emptyPreviewTitle">No document selected</h3>
+              <p data-i18n="emptyPreviewText">Upload one or more files, then choose a document to preview and convert.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel result-panel">
+        <div class="workspace-top sticky-section">
+          <div class="tabs" role="tablist" aria-label="Workspace tabs">
+            <button type="button" class="tab-btn active" data-tab="configuration" role="tab" aria-selected="true" data-i18n="tabConfiguration">Configuration</button>
+            <button type="button" class="tab-btn" data-tab="logging" role="tab" aria-selected="false" data-i18n="tabLogging">Logging</button>
+            <button type="button" class="tab-btn" data-tab="results" role="tab" aria-selected="false" data-i18n="tabResults">Results</button>
+          </div>
+          <div class="result-actions">
+            <button type="button" class="ghost-btn action-btn" id="copyBtn" data-i18n="copy">Copy</button>
+            <button type="button" class="primary-btn action-btn" id="exportWordBtn" data-i18n="exportWord">Export to Word</button>
+          </div>
+        </div>
+
+        <div class="tab-panel active" data-panel="configuration">
+          <div class="panel-heading compact-heading">
+            <div>
+              <p class="eyebrow" data-i18n="configEyebrow">Conversion options</p>
+              <h2 data-i18n="configTitle">Configuration</h2>
+            </div>
+          </div>
+
+          <form class="config-form" id="configForm">
+            <label class="option-card model-select-card">
+              <span>
+                <strong data-i18n="modelLabel">AI model</strong>
+                <small data-i18n="modelText">Choose the Gemini model used for conversion. If it fails, the next model is tried automatically.</small>
+                <select id="modelSelect" class="model-select" name="geminiModel">
+                  <option value="gemini-3.5-pro">Gemini 3.5 Pro</option>
+                  <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+                  <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
+                  <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                  <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                  <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</option>
+                </select>
+              </span>
+            </label>
+
+            <label class="option-card">
+              <input type="checkbox" name="wrapQuotedBlocks" checked />
+              <span>
+                <strong data-i18n="optionQuotedTitle">Wrap each question in quotes</strong>
+                <small data-i18n="optionQuotedText">Keeps each question or subsection separated for easier copying and Word export.</small>
+              </span>
+            </label>
+
+            <label class="option-card">
+              <input type="checkbox" name="preserveMathFormatting" checked />
+              <span>
+                <strong data-i18n="optionMathTitle">Preserve math formatting</strong>
+                <small data-i18n="optionMathText">Keep equations, alignment, and mathematical symbols in raw LaTeX form.</small>
+              </span>
+            </label>
+
+            <label class="option-card">
+              <input type="checkbox" name="keepImageDescriptions" checked />
+              <span>
+                <strong data-i18n="optionImageTitle">Keep figure or stamp descriptions</strong>
+                <small data-i18n="optionImageText">Useful for diagrams, seals, logos, or image placeholders inside exam papers.</small>
+              </span>
+            </label>
+
+            <label class="option-card">
+              <input type="checkbox" name="strictLatexOnly" checked />
+              <span>
+                <strong data-i18n="optionStrictTitle">Output LaTeX only</strong>
+                <small data-i18n="optionStrictText">Prevents extra commentary from being returned outside the converted result.</small>
+              </span>
+            </label>
+
+            <label class="custom-prompt-field">
+              <span data-i18n="customPromptLabel">Additional instruction</span>
+              <textarea id="customPrompt" rows="5" data-i18n-placeholder="customPromptPlaceholder" placeholder="Example: Keep original numbering, preserve mark allocations, and use aligned environments whenever possible."></textarea>
+            </label>
+
+          </form>
+        </div>
+
+        <div class="tab-panel" data-panel="logging">
+          <div class="panel-heading compact-heading">
+            <div>
+              <p class="eyebrow" data-i18n="loggingEyebrow">Processing trail</p>
+              <h2 data-i18n="loggingTitle">Logging</h2>
+            </div>
+            <div class="selection-chip" id="logStatusChip" data-i18n="idle">Idle</div>
+          </div>
+          <div class="log-stream" id="logStream"></div>
+        </div>
+
+        <div class="tab-panel" data-panel="results">
+          <div class="panel-heading compact-heading result-heading">
+            <div>
+              <p class="eyebrow" data-i18n="resultsEyebrow">Extracted output</p>
+              <h2 id="resultDocumentTitle">Result preview</h2>
+            </div>
+            <div class="selection-chip" id="resultMetaChip">0 KB</div>
+          </div>
+
+          <div class="progress-card" id="progressCard">
+            <div class="progress-copy">
+              <strong id="progressLabel" data-i18n="progressReady">Ready to run</strong>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar-track" aria-hidden="true">
+              <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+          </div>
+
+          <div class="result-scroll" id="resultScroll">
+            <button id="highlightOnBtn">Highlight ON</button>
+            <button id="highlightOffBtn">Highlight OFF</button>
+
+            <pre class="latex-output" id="latexOutput"></pre>
+            <div class="empty-state" id="resultEmptyState">
+              <div class="empty-icon">∑</div>
+              <h3 data-i18n="emptyResultTitle">No LaTeX yet</h3>
+              <p data-i18n="emptyResultText">Select a document, press Run, and the result will appear here as highlightable, copyable text.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="textModal" role="dialog" aria-modal="true" aria-labelledby="textModalTitle">
+    <div class="modal-card">
+      <div class="modal-heading">
+        <h3 id="textModalTitle" data-i18n="textModalTitle">Type or paste text</h3>
+        <button type="button" class="modal-close" id="textModalCloseBtn" aria-label="Close">×</button>
+      </div>
+      <textarea id="textModalArea" rows="10" data-i18n-placeholder="textModalPlaceholder" placeholder="Type or paste the math question or text to convert..."></textarea>
+      <div class="modal-actions">
+        <button type="button" class="ghost-btn" id="textCancelBtn" data-i18n="textCancel">Cancel</button>
+        <button type="button" class="primary-btn" id="textSubmitBtn" data-i18n="textSubmit">Add to queue</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop hidden" id="vpnModal" role="dialog" aria-modal="true" aria-labelledby="vpnModalTitle">
+    <div class="modal-card vpn-modal-card">
+      <div class="modal-heading">
+        <h3 id="vpnModalTitle" data-i18n="vpnModalTitle">VPN connection reminder</h3>
+        <button type="button" class="modal-close" id="vpnModalCloseBtn" aria-label="Close">×</button>
+      </div>
+      <p class="vpn-modal-message" data-i18n="vpnModalMessage">If you are located in Hong Kong, please connect to the VPN before using LaTeXify. This tool sends requests to the Google Gemini API.</p>
+      <div class="modal-actions">
+        <button type="button" class="primary-btn" id="vpnModalConfirmBtn" data-i18n="vpnModalConfirm">I understand</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"4edd5f8ec12a48cfa682ab8261b80a79","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
